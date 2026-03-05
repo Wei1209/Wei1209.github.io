@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MEGAPORT 2026 Reminder</title>
+    <style>
+        :root {
+            --megaport-orange: #ff5e00;
+            --megaport-orange-light: #ff7e33;
+            --bg-color: var(--megaport-orange);
+            --header-h: 60px;
+            --cell-h: 50px;
+            --stage-w: 160px;
+            --time-w: 60px;
+
+            --c-南霸天: #a2cf62;
+            --c-海龍王: #9193f2;
+            --c-女神龍: #f857a6;
+            --c-海波浪: #00d2ff;
+            --c-卡魔麥: #ff9a8b;
+            --c-出頭天: #ffd200;
+            --c-大雄丸: #ff416c;
+            --c-藍寶石: #0082c8;
+            --c-青春夢: #ffcc99;
+            --c-小港祭: #8d6e63;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg-color);
+            color: #000;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* 防止 notch 區域背景色落差 */
+            padding-top: env(safe-area-inset-top);
+        }
+
+        header {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #000;
+            z-index: 100;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 3px;
+            border-radius: 10px;
+            border: 2px solid #000;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            color: #000;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #000;
+            color: var(--megaport-orange);
+        }
+
+        .search-area {
+            padding: 8px 15px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #search {
+            flex: 1;
+            background: #fff;
+            border: 2.5px solid #000;
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            outline: none;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        /* Timetable Grid */
+        .viewport {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .grid {
+            display: flex;
+            position: relative;
+            width: max-content;
+            padding-bottom: 150px;
+            /* 留給 FAB */
+        }
+
+        .grid.fav-mode {
+            width: 100%;
+            min-width: 100vw;
+        }
+
+        .time-col {
+            width: var(--time-w);
+            position: sticky;
+            left: 0;
+            background: var(--megaport-orange);
+            z-index: 40;
+            border-right: 3px solid #000;
+        }
+
+        .time-cell {
+            height: var(--cell-h);
+            font-size: 0.75rem;
+            color: #000;
+            font-weight: 950;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 2px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .time-corner {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: var(--time-w);
+            height: var(--header-h);
+            background: #000;
+            z-index: 60;
+            border-right: 3px solid #000;
+            border-bottom: 3px solid #000;
+        }
+
+        .stage-col {
+            width: var(--stage-w);
+            position: relative;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 100% var(--cell-h);
+        }
+
+        .grid.fav-mode .stage-col {
+            flex: 1;
+            min-width: 0;
+            border-right: none;
+        }
+
+        .stage-header {
+            position: sticky;
+            top: 0;
+            width: var(--stage-w);
+            height: var(--header-h);
+            background: #000;
+            color: var(--st-c);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            font-weight: 950;
+            border-bottom: 4px solid var(--st-c);
+        }
+
+        .grid.fav-mode .stage-header {
+            width: 100%;
+            border-bottom-color: #fff;
+        }
+
+        /* Slots */
+        .slot {
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            background: #fff;
+            border: 2.5px solid #000;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 1.1rem;
+            font-weight: 950;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            line-height: 1.15;
+            z-index: 20;
+            box-shadow: 4px 4px 0px #000;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            word-break: break-all;
+        }
+
+        .slot.selected {
+            background: #000;
+            color: #fff;
+            transform: scale(1.03);
+            z-index: 35;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            border-color: #fff;
+        }
+
+        .grid.fav-mode .slot.selected {
+            background: #fff !important;
+            color: #000 !important;
+            transform: scale(1);
+            border-color: #000;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .slot.past {
+            opacity: 0.3;
+            filter: grayscale(1);
+            background: #ddd;
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+        }
+
+        .slot.ongoing {
+            background: #000;
+            color: #fff;
+            border-color: #fff;
+            box-shadow: 0 0 15px #fff, 8px 8px 0px #000;
+            z-index: 38;
+            /* 確保在現在時間線之上或靠近 */
+        }
+
+        .slot.ongoing::before {
+            content: "NOW";
+            position: absolute;
+            top: -12px;
+            right: 5px;
+            font-size: 0.55rem;
+            background: #f00;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 4px;
+            animation: blink 1s infinite;
+            font-weight: 950;
+            border: 1px solid #000;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* 剛好重疊修正樣式 */
+        .grid.fav-mode .slot.selected .t {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .slot .a {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .slot .s-name {
+            font-size: 0.85rem;
+            font-weight: 900;
+            color: var(--st-c);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            border: 2px solid var(--st-c);
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .slot .t {
+            font-size: 0.7rem;
+            font-weight: 800;
+            opacity: 0.7;
+            border-top: 1.5px solid rgba(0, 0, 0, 0.1);
+            padding-top: 4px;
+            width: 100%;
+        }
+
+        .slot.selected .t,
+        .slot.ongoing .t {
+            border-top-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 現在時間紅線 */
+        #now-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #ff0000;
+            z-index: 39;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        #now-line::after {
+            content: "NOW";
+            position: absolute;
+            left: var(--time-w);
+            top: -10px;
+            background: #f00;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 950;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Floating Scroll to Now Button */
+        #jump-now {
+            position: fixed;
+            right: 20px;
+            bottom: 90px;
+            width: 50px;
+            height: 50px;
+            background: #000;
+            color: #fff;
+            border-radius: 25px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 950;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            z-index: 140;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="tabs" id="day-tabs">
+            <button class="tab active" onclick="setDay('21')">03/21</button>
+            <button class="tab" onclick="setDay('22')">03/22</button>
+        </div>
+        <div class="tabs" id="view-tabs">
+            <button class="tab active" onclick="setView('grid')">完整表</button>
+            <button class="tab" onclick="setView('fav')">我的行程</button>
+        </div>
+    </header>
+
+    <div class="search-area" id="search-box">
+        <input type="text" id="search" placeholder="快速搜尋表演者..." oninput="render()">
+    </div>
+
+    <div class="viewport" id="vp">
+        <div class="grid" id="main-grid">
+            <div id="now-line"></div>
+            <div class="time-corner"></div>
+            <div class="time-col" id="times"></div>
+            <div id="stages-wrap" style="display: flex; flex: 1;"></div>
+        </div>
+    </div>
+
+    <div id="jump-now" onclick="scrollToNow()">⚡</div>
+
+
+    <script>
+        const STAGE_ORDER = ["南霸天", "海龍王", "女神龍", "海波浪", "卡魔麥", "出頭天", "大雄丸", "藍寶石", "青春夢", "小港祭"];
+        const COLORS = { "南霸天": "#a2cf62", "海龍王": "#9193f2", "女神龍": "#f857a6", "海波浪": "#00d2ff", "卡魔麥": "#ff9a8b", "出頭天": "#ffd200", "大雄丸": "#ff416c", "藍寶石": "#0082c8", "青春夢": "#ffcc99", "小港祭": "#8d6e63" };
+
+        const START_HOUR = 12;
+        const START_MIN = 30;
+        const END_HOUR = 22;
+        const startOffsetMin = START_HOUR * 60 + START_MIN;
+        const endOffsetMin = END_HOUR * 60;
+
+        const CELL_H = 50;
+        const HEADER_H = 60;
+
+        function minToTime(m) {
+            return Math.floor(m / 60) + ":" + (m % 60).toString().padStart(2, '0');
+        }
+        function timeToMin(t) {
+            const [h, m] = t.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        const DATA = {
+            "21": [
+                { s: "南霸天", a: "椅子樂團", t: "12:30-13:10" }, { s: "南霸天", a: "The Birthday [JP]", t: "14:10-14:50" }, { s: "南霸天", a: "Aooo [JP]", t: "15:50-16:30" }, { s: "南霸天", a: "滅火器", t: "17:30-18:10" }, { s: "南霸天", a: "milet [JP]", t: "19:10-19:50" }, { s: "南霸天", a: "血肉果汁機 ft. 陳亞蘭", t: "21:10-21:50" },
+                { s: "海龍王", a: "NEE [JP]", t: "13:10-13:50" }, { s: "海龍王", a: "jo0ji [JP]", t: "14:40-15:20" }, { s: "海龍王", a: "黑狼人肉戰車那卡西", t: "16:00-16:40" }, { s: "海龍王", a: "AVRALIZE [DE]", t: "17:20-18:00" }, { s: "海龍王", a: "無妄合作社", t: "18:40-19:20" }, { s: "海龍王", a: "Käärijä [FI]", t: "20:10-21:00" },
+                { s: "女神龍", a: "海豚刑警", t: "12:30-13:10" }, { s: "女神龍", a: "漂流出口", t: "13:50-14:30" }, { s: "女神龍", a: "南瓜妮歌迷俱樂部", t: "15:10-15:50" }, { s: "女神龍", a: "the band apart [JP]", t: "16:40-17:20" }, { s: "女神龍", a: "same Sam but different. 鄭敬儒|山姆|楊世暄", t: "18:00-18:40" }, { s: "女神龍", a: "李竺芯 ft. 妮妃雅・瘋", t: "19:30-20:10" }, { s: "女神龍", a: "謝金燕", t: "21:00-21:40" },
+                { s: "海波浪", a: "倒車入庫", t: "13:10-13:50" }, { s: "海波浪", a: "DSPS", t: "14:30-15:10" }, { s: "海波浪", a: "Yokkorio", t: "15:50-16:30" }, { s: "海波浪", a: "Mong Tong x XTRUX", t: "17:10-17:50" }, { s: "海波浪", a: "體熊專科", t: "18:40-19:20" }, { s: "海波浪", a: "宅邦戰隊", t: "20:10-21:40" },
+                { s: "卡魔麥", a: "COLD DEW", t: "13:10-13:50" }, { s: "卡魔麥", a: "Yappy", t: "14:50-15:30" }, { s: "卡魔麥", a: "馬克", t: "16:30-17:10" }, { s: "卡魔麥", a: "P!SCO", t: "18:10-18:50" }, { s: "卡魔麥", a: "Manic Sheep", t: "19:50-20:30" },
+                { s: "出頭天", a: "MoonD'shake", t: "13:40-14:10" }, { s: "出頭天", a: "LAWA ft. Angie 安吉", t: "15:00-15:40" }, { s: "出頭天", a: "憂憂 ft. 奕碩", t: "16:20-17:00" }, { s: "出頭天", a: "陳以恆", t: "17:40-18:20" },
+                { s: "大雄丸", a: "何勁旻 陳冠哼", t: "13:00-14:00" }, { s: "大雄丸", a: "光頭火鳥 光頭美麗 光頭珞亦", t: "15:00-16:00" }, { s: "大雄丸", a: "曾國宏 許正泰", t: "17:00-18:00" },
+                { s: "藍寶石", a: "黃雨晴", t: "14:00-14:40" }, { s: "藍寶石", a: "昭霖 & 甜吻吻", t: "15:20-16:00" }, { s: "藍寶石", a: "BBFFMF", t: "16:40-17:20" }, { s: "藍寶石", a: "美麗本人 ft. 異鄉人", t: "18:00-18:40" }, { s: "藍寶石", a: "大象體操紀錄片", t: "19:20-21:20" },
+                { s: "青春夢", a: "共振效應", t: "13:20-14:00" }, { s: "青春夢", a: "帕崎拉", t: "14:40-15:20" }, { s: "青春夢", a: "MOTIF HIVE", t: "16:00-16:40" }, { s: "青春夢", a: "震樂堂", t: "17:20-18:00" }, { s: "青春夢", a: "庵心自在所", t: "18:40-19:20" },
+                { s: "小港祭", a: "DJ N.OERS", t: "15:00-16:10" }, { s: "小港祭", a: "DJ GAN3DA", t: "16:10-17:20" }, { s: "小港祭", a: "DJ GTER", t: "17:20-18:40" }, { s: "小港祭", a: "DJ YU", t: "18:40-19:50" }, { s: "小港祭", a: "DJ DINDIN", t: "19:50-21:00" }
+            ],
+            "22": [
+                { s: "南霸天", a: "結束バンド [JP]", t: "12:30-13:10" }, { s: "南霸天", a: "芒果醬", t: "14:10-14:50" }, { s: "南霸天", a: "康士坦的變化球", t: "15:50-16:30" }, { s: "南霸天", a: "怕胖團 ft. 陽帆", t: "17:30-18:10" }, { s: "南霸天", a: "拍謝少年 ft. AYUNi D", t: "19:10-19:50" }, { s: "南霸天", a: "落日飛車", t: "21:10-21:50" },
+                { s: "海龍王", a: "EmptyORio", t: "13:20-14:00" }, { s: "海龍王", a: "ゲシュタルト乙女 ft. yurinasia", t: "14:40-15:20" }, { s: "海龍王", a: "隨性 ft. 婷文", t: "16:00-16:40" }, { s: "海龍王", a: "NOVELISTS [FR]", t: "17:20-18:00" }, { s: "海龍王", a: "巨大的轟鳴", t: "18:40-19:20" }, { s: "海龍王", a: "Hiromi's Sonicwonder [JP・US・FR]", t: "20:10-21:10" },
+                { s: "女神龍", a: "HUSH", t: "12:40-13:20" }, { s: "女神龍", a: "TOOBOE [JP]", t: "14:00-14:40" }, { s: "女神龍", a: "Gummy B x 陳嫺靜", t: "15:20-16:00" }, { s: "女神龍", a: "當代電影大師", t: "16:40-17:20" }, { s: "女神龍", a: "鄭宜農", t: "18:00-18:40" }, { s: "女神龍", a: "BAND-MAID [JP]", t: "19:30-20:10" }, { s: "女神龍", a: "AiNA THE END [JP]", t: "21:00-21:40" },
+                { s: "海波浪", a: "黃宇寒", t: "13:10-13:50" }, { s: "海波浪", a: "KINAKO & 東京中央線", t: "14:30-15:10" }, { s: "海波浪", a: "多米多羅 ft. 可凡", t: "15:50-16:30" }, { s: "海波浪", a: "FunkyMo ft. 小尾巴", t: "17:10-17:50" }, { s: "海波浪", a: "粉紅噪音", t: "18:30-19:10" }, { s: "海波浪", a: "派對超人 羅百吉 ft. 寶貝", t: "20:10-21:40" },
+                { s: "卡魔麥", a: "TSS [FR]", t: "13:10-13:50" }, { s: "卡魔麥", a: "恆月三途", t: "14:50-15:30" }, { s: "卡魔麥", a: "五月五日 [KR]", t: "16:30-17:10" }, { s: "卡魔麥", a: "Infernal Chaos", t: "18:10-18:50" }, { s: "卡魔麥", a: "忘憂水", t: "19:50-20:30" },
+                { s: "出頭天", a: "畫室", t: "13:40-14:20" }, { s: "出頭天", a: "薄荷葉 ft. JB", t: "15:00-15:40" }, { s: "出頭天", a: "馬尾 ft. 立長", t: "16:20-17:00" }, { s: "出頭天", a: "洪安妮", t: "17:40-18:20" },
+                { s: "大雄丸", a: "呱吉|迪拉|李毅誠", t: "13:00-14:00" }, { s: "大雄丸", a: "柯家洋 阿舌", t: "15:00-16:00" }, { s: "大雄丸", a: "小堯|阿賢", t: "17:00-18:00" },
+                { s: "藍寶石", a: "LEIGHT NINE", t: "14:00-14:40" }, { s: "藍寶石", a: "破地獄", t: "15:20-16:00" }, { s: "藍寶石", a: "喜劇開港", t: "16:40-17:20" }, { s: "藍寶石", a: "Plutato", t: "18:00-18:40" },
+                { s: "青春夢", a: "打倒三明治", t: "13:20-14:00" }, { s: "青春夢", a: "壓滿俱樂部", t: "14:40-15:20" }, { s: "青春夢", a: "沈默紳士", t: "16:00-16:40" }, { s: "青春夢", a: "debloop", t: "17:20-18:00" }, { s: "青春夢", a: "貓膽汁", t: "18:40-19:20" },
+                { s: "小港祭", a: "DJ QuestionMark", t: "15:00-16:20" }, { s: "小港祭", a: "DCIV + Lazy Habits", t: "16:20-17:00" }, { s: "小港祭", a: "Flowstrong + Dac", t: "17:00-17:40" }, { s: "小港祭", a: "BRADD + 阿法", t: "17:40-18:20" }, { s: "小港祭", a: "That's My Shhh", t: "18:20-19:40" }, { s: "小港祭", a: "DJ 賴皮", t: "19:40-21:00" }
+            ]
+        };
+
+        let day = '21';
+        let viewMode = 'grid';
+        let favs = JSON.parse(localStorage.getItem('megaport2026_favs_vFinal') || '[]');
+
+        function setDay(d) {
+            day = d;
+            const btns = document.querySelectorAll('#day-tabs .tab');
+            btns[0].classList.toggle('active', d === '21');
+            btns[1].classList.toggle('active', d === '22');
+            render();
+            syncNowIndicator();
+        }
+
+        function setView(v) {
+            viewMode = v;
+            const btns = document.querySelectorAll('#view-tabs .tab');
+            btns[0].classList.toggle('active', v === 'grid');
+            btns[1].classList.toggle('active', v === 'fav');
+            document.getElementById('search-box').style.display = (v === 'fav') ? 'none' : 'flex';
+            render();
+            syncNowIndicator();
+        }
+
+        function render() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const stageWrap = document.getElementById('stages-wrap');
+            const timeCol = document.getElementById('times');
+            const mainGrid = document.getElementById('main-grid');
+
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            const festivalDate21 = new Date("2026-03-21T00:00:00").toDateString();
+            const festivalDate22 = new Date("2026-03-22T00:00:00").toDateString();
+            const isTodayFest = (day === '21' && now.toDateString() === festivalDate21) || (day === '22' && now.toDateString() === festivalDate22);
+
+            let timeHtml = `<div style="height: ${HEADER_H}px;"></div>`;
+            for (let m = startOffsetMin; m <= endOffsetMin; m += 10) {
+                timeHtml += `<div class="time-cell">${minToTime(m)}</div>`;
+            }
+            timeCol.innerHTML = timeHtml;
+
+            if (viewMode === 'fav') {
+                mainGrid.classList.add('fav-mode');
+                stageWrap.innerHTML = `<div class="stage-col" id="col-fav"><div class="stage-header" style="--st-c:#fff">我的行程 (03/${day})</div></div>`;
+
+                const myShows = DATA[day].filter(p => favs.includes(p.a));
+                myShows.sort((a, b) => timeToMin(a.t.split('-')[0]) - timeToMin(b.t.split('-')[0]));
+
+                const lanes = [];
+                myShows.forEach(p => {
+                    const start = timeToMin(p.t.split('-')[0]);
+                    const end = timeToMin(p.t.split('-')[1]);
+                    let laneIndex = lanes.findIndex(lane => lane.every(other => {
+                        const [oStart, oEnd] = other.t.split('-').map(timeToMin);
+                        return end <= oStart || start >= oEnd;
+                    }));
+                    if (laneIndex === -1) lanes.push([p]);
+                    else lanes[laneIndex].push(p);
+                });
+
+                const laneCount = lanes.length;
+                lanes.forEach((lane, lIdx) => {
+                    lane.forEach(p => {
+                        const [sT, eT] = p.t.split('-');
+                        const sM = timeToMin(sT);
+                        const eM = timeToMin(eT);
+                        const top = ((sM - startOffsetMin) / 10) * CELL_H + HEADER_H;
+                        const h = ((eM - sM) / 10) * CELL_H;
+
+                        let status = "";
+                        if (isTodayFest) {
+                            if (nowMin > eM) status = "past";
+                            else if (nowMin >= sM) status = "ongoing";
+                        }
+
+                        const div = document.createElement('div');
+                        div.className = `slot ${status} selected`;
+                        const gap = 2;
+                        div.style.top = (top + gap) + "px";
+                        div.style.height = (h - (gap * 2)) + "px";
+                        const laneWidth = 100 / laneCount;
+                        div.style.width = `calc(${laneWidth}% - 12px)`;
+                        div.style.left = `calc(${(lIdx * laneWidth)}% + 6px)`;
+                        div.style.setProperty('--st-c', COLORS[p.s]);
+                        div.innerHTML = `<div class="s-name" style="--st-c:${COLORS[p.s]}">${p.s}</div><div class="a">${p.a}</div><div class="t">${p.t}</div>`;
+                        div.style.cursor = 'default';
+                        document.getElementById('col-fav').appendChild(div);
+                    });
+                });
+            } else {
+                mainGrid.classList.remove('fav-mode');
+                stageWrap.innerHTML = STAGE_ORDER.map(s => `
+                    <div class="stage-col" id="col-${s}">
+                        <div class="stage-header" style="--st-c:${COLORS[s]}">${s}</div>
+                    </div>
+                `).join('');
+
+                DATA[day].forEach(p => {
+                    if (search && !p.a.toLowerCase().includes(search) && !p.s.toLowerCase().includes(search)) return;
+                    const [sT, eT] = p.t.split('-');
+                    const sM = timeToMin(sT);
+                    const eM = timeToMin(eT);
+                    const top = ((sM - startOffsetMin) / 10) * CELL_H + HEADER_H;
+                    const h = ((eM - sM) / 10) * CELL_H;
+
+                    let status = "";
+                    if (isTodayFest) {
+                        if (nowMin > eM) status = "past";
+                        else if (nowMin >= sM) status = "ongoing";
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = `slot ${status} ${favs.includes(p.a) ? 'selected' : ''}`;
+                    div.style.top = top + "px";
+                    div.style.height = h + "px";
+                    div.style.setProperty('--st-c', COLORS[p.s]);
+                    div.innerHTML = `<div class="a">${p.a}</div><div class="t">${p.t}</div>`;
+                    div.onclick = () => toggleFav(p.a);
+                    const col = document.getElementById('col-' + p.s);
+                    if (col) col.appendChild(div);
+                });
+            }
+        }
+
+        // --- 手機優化邏輯 ---
+
+        function syncNowIndicator() {
+            const line = document.getElementById('now-line');
+            const fab = document.getElementById('jump-now');
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+
+            const festivalDate21 = new Date("2026-03-21T00:00:00").toDateString();
+            const festivalDate22 = new Date("2026-03-22T00:00:00").toDateString();
+            const isTodayFest = (day === '21' && now.toDateString() === festivalDate21) || (day === '22' && now.toDateString() === festivalDate22);
+
+            // 只有在當前選取的日期是當天，且時間在活動範圍內時顯示紅線
+            if (isTodayFest && nowMin >= startOffsetMin && nowMin <= endOffsetMin) {
+                const top = ((nowMin - startOffsetMin) / 10) * CELL_H + HEADER_H;
+                line.style.top = top + "px";
+                line.style.display = "block";
+                fab.style.display = "flex";
+            } else {
+                line.style.display = "none";
+                fab.style.display = "none";
+            }
+        }
+
+        function scrollToNow() {
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            if (nowMin >= startOffsetMin && nowMin <= endOffsetMin) {
+                const top = ((nowMin - startOffsetMin) / 10) * CELL_H + HEADER_H;
+                // 到螢幕中間
+                document.getElementById('vp').scrollTo({ top: top - window.innerHeight / 2 + 100, behavior: 'smooth' });
+            }
+        }
+
+        function autoScrollOnLoad() {
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            // 先嘗試捲動到第一個正在進行的表演，如果沒有才捲動到目前時間
+            if (nowMin >= startOffsetMin && nowMin <= endOffsetMin) {
+                setTimeout(scrollToNow, 500);
+            }
+        }
+
+        function toggleFav(artist) {
+            const idx = favs.indexOf(artist);
+            if (idx > -1) favs.splice(idx, 1);
+            else favs.push(artist);
+            localStorage.setItem('megaport2026_favs_vFinal', JSON.stringify(favs));
+            render();
+        }
+
+        // 初始化
+        setDay('21');
+        autoScrollOnLoad();
+        setInterval(render, 30000);
+        setInterval(syncNowIndicator, 60000);
+        syncNowIndicator();
+    </script>
+</body>
+
+</html>
