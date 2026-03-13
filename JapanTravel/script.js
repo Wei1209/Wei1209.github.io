@@ -67,9 +67,10 @@ const itineraryData = [
         title: "築地與秋葉原",
         activities: [
             { time: "", text: "築地市場 吃早餐", location: "築地", url: "https://maps.app.goo.gl/bpm8BoQDsCgvNGCy8" },
-            { time: "", text: "秋葉原電器街", location: "秋葉原", url: "https://maps.app.goo.gl/mbuFwAVxKQrcGF2f7" },
             { time: "", text: "銀座", location: "銀座", url: "" },
-            { time: "", text: "炸豬排 丸七 銀座", location: "", url: "https://maps.app.goo.gl/We7C1eeyTHqkGPoh6" }
+            { time: "", text: "炸豬排 丸七 銀座", location: "", url: "https://maps.app.goo.gl/We7C1eeyTHqkGPoh6" },
+            { time: "", text: "皇居看櫻花", location: "皇居", url: "" },
+            { time: "", text: "秋葉原電器街", location: "秋葉原", url: "https://maps.app.goo.gl/mbuFwAVxKQrcGF2f7" },
         ]
     },
     {
@@ -77,9 +78,10 @@ const itineraryData = [
         day: "Day 7",
         title: "淺草與回程",
         activities: [
-            { time: "", text: "上野", location: "上野", url: "" },
+            { time: "", text: "上野 寄放行李", location: "上野", url: "" },
             { time: "", text: "淺草", location: "淺草", url: "" },
-            { time: "", text: "前往成田機場", location: "成田國際機場", url: "" }
+            { time: "", text: "上野 Skyliner 往成田機場", location: "上野車站", url: "" },
+            { time: "17:40", text: "飛機回高雄", location: "成田國際機場", url: "" }
         ]
     }
 ];
