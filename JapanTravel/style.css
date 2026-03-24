@@ -365,4 +365,10 @@ footer {
         gap: 15px;
         align-items: center;
     }
+
+    .day-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
 }

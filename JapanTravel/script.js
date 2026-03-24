@@ -63,7 +63,7 @@ const itineraryData = [
     },
     {
         date: "2026-03-30",
-        day: "Day 6: 築地與秋葉原",
+        day: "Day 6",
         title: "築地與秋葉原",
         activities: [
             { time: "", text: "築地市場 吃早餐", location: "築地", url: "https://maps.app.goo.gl/bpm8BoQDsCgvNGCy8" },
@@ -172,6 +172,11 @@ async function renderItinerary(filterDay = 'all') {
         if (filterDay !== 'all' && filterDay !== index.toString()) return;
 
         const forecast = getForecastForDate(dayData.date);
+        
+        const dateObj = new Date(dayData.date);
+        const daysOfWeek = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const dayOfWeek = daysOfWeek[dateObj.getDay()];
+
         const dayCard = document.createElement('div');
         dayCard.className = 'day-card';
 
@@ -196,7 +201,7 @@ async function renderItinerary(filterDay = 'all') {
         dayCard.innerHTML = `
             <div class="day-header">
                 <h2>${dayData.day}: ${dayData.title}</h2>
-                <span class="day-date">${dayData.date}</span>
+                <span class="day-date">${dayData.date} (${dayOfWeek})</span>
             </div>
             
             <div class="day-meta-top">
